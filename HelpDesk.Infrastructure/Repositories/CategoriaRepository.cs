@@ -13,9 +13,9 @@ public class CategoriaRepository : ICategoriaRepository
         _context = context;
     }
 
+    // TODO: Consulta de categorías (diapositiva 7).
     public Task<List<Categoria>> ObtenerTodasAsync()
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 }

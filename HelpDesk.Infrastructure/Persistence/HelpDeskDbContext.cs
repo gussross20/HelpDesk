@@ -17,6 +17,6 @@ public class HelpDeskDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // TODO: Implementar en Capa Infrastructure
+        // TODO: Fluent API + HasData (diapositiva 7).
     }
 }

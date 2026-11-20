@@ -5,6 +5,7 @@ using HelpDesk.Infrastructure.Persistence;
 
 namespace HelpDesk.Infrastructure.Repositories;
 
+// TODO: Implementar los 5 métodos (diapositiva 7).
 public class TicketRepository : ITicketRepository
 {
     private readonly HelpDeskDbContext _context;
@@ -16,31 +17,26 @@ public class TicketRepository : ITicketRepository
 
     public Task<List<Ticket>> ObtenerTodosAsync(EstadoTicket? estadoFiltro = null)
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 
     public Task<Ticket?> ObtenerPorIdConDetallesAsync(int id)
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 
     public Task AgregarAsync(Ticket ticket)
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 
     public Task ActualizarAsync(Ticket ticket)
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 
     public Task AgregarComentarioAsync(ComentarioTicket comentario)
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        throw new NotImplementedException();
     }
 }

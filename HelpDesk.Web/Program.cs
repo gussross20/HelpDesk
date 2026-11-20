@@ -2,7 +2,7 @@ using HelpDesk.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// TODO: Registrar Inyección de Dependencias en la Capa Web
+// TODO: Registrar DI (diapositiva 10).
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

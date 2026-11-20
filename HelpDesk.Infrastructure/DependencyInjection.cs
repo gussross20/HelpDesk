@@ -13,16 +13,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // TODO: Implementar en Capa Infrastructure
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
-
-        services.AddDbContext<HelpDeskDbContext>(options =>
-            options.UseSqlServer(connectionString));
-
-        services.AddScoped<ICategoriaRepository, CategoriaRepository>();
-        services.AddScoped<ITicketRepository, TicketRepository>();
-
+        // TODO: Registrar DbContext y repositorios (diapositiva 10).
         return services;
     }
 }
