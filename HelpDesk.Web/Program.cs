@@ -1,6 +1,8 @@
 using HelpDesk.Application.Services;
 using HelpDesk.Infrastructure;
+using HelpDesk.Infrastructure.Persistence;
 using HelpDesk.Web.Components;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,10 +14,13 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
-// MIGRACIÓN AUTOMÁTICA EN DESARROLLO
-// TODO (Bloque 1 - 10:30 AM):
-// Habilitar database.Migrate() al generar la migración InitialCreate con EF Core.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<HelpDeskDbContext>();
+    dbContext.Database.Migrate();
+}
+else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();

@@ -2,12 +2,10 @@ namespace HelpDesk.Domain.Entities;
 
 public class ComentarioTicket
 {
-    // TODO (Bloque 1 - 10:30 AM):
-    // Definir las propiedades y relaciones de la entidad ComentarioTicket:
-    // - Id (int)
-    // - TicketId (int)
-    // - Ticket (propiedad de navegación)
-    // - Autor (string, max 100)
-    // - Mensaje (string, max 500)
-    // - Fecha (DateTime)
+    public int Id { get; set; }
+    public int TicketId { get; set; }
+    public Ticket Ticket { get; set; } = null!;
+    public string Autor { get; set; } = string.Empty;
+    public string Mensaje { get; set; } = string.Empty;
+    public DateTime Fecha { get; set; } = DateTime.UtcNow;
 }

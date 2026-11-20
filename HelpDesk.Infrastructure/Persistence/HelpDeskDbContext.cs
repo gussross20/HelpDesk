@@ -1,4 +1,5 @@
 using HelpDesk.Domain.Entities;
+using HelpDesk.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HelpDesk.Infrastructure.Persistence;
@@ -10,11 +11,8 @@ public class HelpDeskDbContext : DbContext
     }
 
     public DbSet<Categoria> Categorias => Set<Categoria>();
-
-    // TODO (Bloque 1 - 10:30 AM):
-    // Descomentar y registrar los DbSets de Ticket y ComentarioTicket tras definir sus entidades:
-    // public DbSet<Ticket> Tickets => Set<Ticket>();
-    // public DbSet<ComentarioTicket> Comentarios => Set<ComentarioTicket>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<ComentarioTicket> Comentarios => Set<ComentarioTicket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,14 +31,56 @@ public class HelpDeskDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(250);
 
-            // TODO (Bloque 1): Configurar relación 1:N Categoria -> Tickets
+            entity.HasMany(c => c.Tickets)
+                .WithOne(t => t.Categoria)
+                .HasForeignKey(t => t.CategoriaId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // TODO (Bloque 1 - 10:30 AM):
-        // Configurar Fluent API para las entidades Ticket y ComentarioTicket:
-        // - Claves primarias y longitudes máximas
-        // - Relación 1:N Categoria -> Ticket (Restrict)
-        // - Relación 1:N Ticket -> ComentarioTicket (Cascade)
+        modelBuilder.Entity<Ticket>(entity =>
+        {
+            entity.ToTable("Tickets");
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.Titulo)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(t => t.Descripcion)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.Property(t => t.Prioridad)
+                .IsRequired();
+
+            entity.Property(t => t.Estado)
+                .IsRequired();
+
+            entity.Property(t => t.FechaCreacion)
+                .IsRequired();
+
+            entity.HasMany(t => t.Comentarios)
+                .WithOne(c => c.Ticket)
+                .HasForeignKey(c => c.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ComentarioTicket>(entity =>
+        {
+            entity.ToTable("Comentarios");
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Autor)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(c => c.Mensaje)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(c => c.Fecha)
+                .IsRequired();
+        });
 
         modelBuilder.Entity<Categoria>().HasData(
             new Categoria
