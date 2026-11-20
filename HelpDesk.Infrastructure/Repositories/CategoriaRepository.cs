@@ -15,8 +15,7 @@ public class CategoriaRepository : ICategoriaRepository
 
     public Task<List<Categoria>> ObtenerTodasAsync()
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Implementar consulta de categorías utilizando EF Core (_context.Categorias.AsNoTracking().ToListAsync())
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 }

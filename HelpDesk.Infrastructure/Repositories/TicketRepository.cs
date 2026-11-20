@@ -16,40 +16,31 @@ public class TicketRepository : ITicketRepository
 
     public Task<List<Ticket>> ObtenerTodosAsync(EstadoTicket? estadoFiltro = null)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Implementar consulta de tickets con:
-        // - AsNoTracking() para alto rendimiento en lecturas
-        // - .Include(t => t.Categoria) y .Include(t => t.Comentarios) para evitar NullReferenceException
-        // - Filtro opcional por estado
-        // - Ordenamiento por FechaCreacion descendente
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 
     public Task<Ticket?> ObtenerPorIdConDetallesAsync(int id)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Consultar ticket por Id incluyendo sus relaciones Categoria y Comentarios.
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 
     public Task AgregarAsync(Ticket ticket)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Agregar ticket a la base de datos y llamar SaveChangesAsync().
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 
     public Task ActualizarAsync(Ticket ticket)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Actualizar ticket en la base de datos y persistir cambios.
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 
     public Task AgregarComentarioAsync(ComentarioTicket comentario)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Agregar comentario y persistir cambios.
-        throw new NotImplementedException("Implementar en el taller");
+        // TODO: Implementar en Capa Infrastructure
+        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
     }
 }

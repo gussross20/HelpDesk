@@ -2,9 +2,5 @@ namespace HelpDesk.Domain.Entities;
 
 public class Categoria
 {
-    public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public string Descripcion { get; set; } = string.Empty;
-
-    public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+    // TODO: Declarar propiedades guiándose con el Diagrama ER de la diapositiva
 }
