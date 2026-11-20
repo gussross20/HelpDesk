@@ -1,0 +1,179 @@
+@page "/tickets/nuevo"
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+
+<PageTitle>HelpDesk - Nuevo Ticket</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="" class="text-decoration-none">Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Nuevo Ticket</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary bg-opacity-10 text-primary rounded">
+                        <i class="bi bi-file-earmark-plus fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Registrar Solicitud de Soporte</h4>
+                        <small class="text-muted">Complete los datos requeridos para abrir un nuevo ticket.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(_mensajeError))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div>@_mensajeError</div>
+                        <button type="button" class="btn-close" @onclick="() => _mensajeError = null"></button>
+                    </div>
+                }
+
+                @if (_cargandoCategorias)
+                {
+                    <div class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        Cargando categorías disponibles desde la base de datos...
+                    </div>
+                }
+                else
+                {
+                    <EditForm Model="@_modelo" OnValidSubmit="GuardarTicketAsync">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <ValidationSummary class="alert alert-warning py-2 mb-3" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="titulo">
+                                Título del Ticket <span class="text-danger">*</span>
+                            </label>
+                            <InputText id="titulo" class="form-control" @bind-Value="_modelo.Titulo" placeholder="Ej. Falla de conexión a internet en laboratorio 3" />
+                            <ValidationMessage For="@(() => _modelo.Titulo)" class="text-danger small" />
+                        </div>
+
+                        <div class="row g-3 mb-3">
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="categoria">
+                                    Categoría <span class="text-danger">*</span>
+                                </label>
+                                <InputSelect id="categoria" class="form-select" @bind-Value="_modelo.CategoriaId">
+                                    <option value="0">-- Seleccione una categoría --</option>
+                                    @foreach (var cat in _categorias)
+                                    {
+                                        <option value="@cat.Id">@cat.Nombre</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => _modelo.CategoriaId)" class="text-danger small" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" for="prioridad">
+                                    Nivel de Prioridad <span class="text-danger">*</span>
+                                </label>
+                                <InputSelect id="prioridad" class="form-select" @bind-Value="_modelo.Prioridad">
+                                    <option value="@PrioridadTicket.Baja">Baja</option>
+                                    <option value="@PrioridadTicket.Media">Media</option>
+                                    <option value="@PrioridadTicket.Alta">Alta</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => _modelo.Prioridad)" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="descripcion">
+                                Descripción Detallada del Incidente <span class="text-danger">*</span>
+                            </label>
+                            <InputTextArea id="descripcion"
+                                           class="form-control"
+                                           rows="5"
+                                           @bind-Value="_modelo.Descripcion"
+                                           placeholder="Describa el síntoma, mensajes de error, pasos para reproducir y el equipo afectado..." />
+                            <ValidationMessage For="@(() => _modelo.Descripcion)" class="text-danger small" />
+                            <div class="form-text text-muted">Máximo 1000 caracteres.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a href="" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1" disabled="@_guardando">
+                                @if (_guardando)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span>Guardando...</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Crear Ticket</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CrearTicketDto _modelo = new();
+    private List<Categoria> _categorias = new();
+    private bool _cargandoCategorias = true;
+    private bool _guardando = false;
+    private string? _mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _categorias = await TicketService.ObtenerCategoriasAsync();
+        }
+        catch (Exception ex)
+        {
+            _mensajeError = $"Error al cargar categorías: {ex.Message}";
+        }
+        finally
+        {
+            _cargandoCategorias = false;
+        }
+    }
+
+    private async Task GuardarTicketAsync()
+    {
+        _guardando = true;
+        _mensajeError = null;
+
+        try
+        {
+            var resultado = await TicketService.CrearTicketAsync(_modelo);
+
+            if (resultado.IsSuccess)
+            {
+                Navigation.NavigateTo($"tickets/{resultado.Value}");
+            }
+            else
+            {
+                _mensajeError = resultado.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _mensajeError = $"Ocurrió una falla técnica al registrar el ticket: {ex.Message}";
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+}
