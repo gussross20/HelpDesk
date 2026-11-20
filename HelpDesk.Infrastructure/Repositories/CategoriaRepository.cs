@@ -1,6 +1,7 @@
 using HelpDesk.Domain.Entities;
 using HelpDesk.Domain.Interfaces;
 using HelpDesk.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpDesk.Infrastructure.Repositories;
 
@@ -13,9 +14,11 @@ public class CategoriaRepository : ICategoriaRepository
         _context = context;
     }
 
-    public Task<List<Categoria>> ObtenerTodasAsync()
+    public async Task<List<Categoria>> ObtenerTodasAsync()
     {
-        // TODO: Implementar en Capa Infrastructure
-        throw new NotImplementedException("TODO: Implementar en Capa Infrastructure");
+        return await _context.Categorias
+            .AsNoTracking()
+            .OrderBy(c => c.Nombre)
+            .ToListAsync();
     }
 }
