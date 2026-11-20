@@ -1,0 +1,37 @@
+﻿@page "/"
+@page "/tickets"
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+
+<PageTitle>HelpDesk - Taller Universitario</PageTitle>
+
+<!-- ARQUITECTURA: AISLAMIENTO DE CAPAS E INVERSIÓN DE CONTROL
+     La vista (capa de presentación) solo inyecta y consume la abstracción ITicketService.
+     No tiene ninguna referencia a HelpDeskDbContext ni a repositorios.
+     ANTI-PATRÓN EVITADO: SMART UI / FUGA DE ABSTRACCIÓN
+     Inyectar DbContext directamente en componentes de interfaz acopla la UI a la tecnología
+     de persistencia de datos (SQL Server / EF Core), dispersa las reglas de negocio y dificulta las pruebas. -->
+
+<div class="p-5 mb-4 bg-light rounded-3 border text-center shadow-sm">
+    <div class="container-fluid py-3">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="bi bi-headset me-2"></i>HelpDesk Starter Kit
+        </h1>
+        <p class="col-md-8 fs-5 mx-auto text-muted">
+            Taller Universitario: Clean Architecture y Patrones de Diseño en .NET 10.
+        </p>
+        <hr class="my-4 mx-auto w-50" />
+        <div class="alert alert-info d-inline-block text-start shadow-sm" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Punto de partida del taller:</strong>
+            Explore la estructura de proyectos y complete los bloques prácticos según la guía.
+        </div>
+    </div>
+</div>
+
+<!-- TODO (Bloque 3 - 1:30 PM):
+     Construir UI en el taller:
+     1. Tarjetas de resumen con métricas (Abiertos, En Proceso, Resueltos).
+     2. Botones de filtro por estado.
+     3. Tabla interactiva de tickets con badges de prioridad y estado.
+     4. Enlaces de navegación a 'Nuevo Ticket' y 'Ver Detalle'. -->
