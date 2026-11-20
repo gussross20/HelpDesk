@@ -27,49 +27,134 @@ public class TicketService : ITicketService
         _categoriaRepository = categoriaRepository;
     }
 
-    public Task<List<TicketResumenDto>> ObtenerTicketsAsync(EstadoTicket? estadoFiltro = null)
+    public async Task<List<TicketResumenDto>> ObtenerTicketsAsync(EstadoTicket? estadoFiltro = null)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Consultar tickets a través de ITicketRepository y mapear a TicketResumenDto.
-        throw new NotImplementedException("Implementar en el taller");
+        var tickets = await _ticketRepository.ObtenerTodosAsync(estadoFiltro);
+
+        return tickets.Select(t => new TicketResumenDto
+        {
+            Id = t.Id,
+            Titulo = t.Titulo,
+            Prioridad = t.Prioridad,
+            Estado = t.Estado,
+            CategoriaNombre = t.Categoria?.Nombre ?? "Sin Asignar",
+            FechaCreacion = t.FechaCreacion,
+            TotalComentarios = t.Comentarios?.Count ?? 0
+        }).ToList();
     }
 
-    public Task<Result<TicketDetalleDto>> ObtenerDetalleAsync(int id)
+    public async Task<Result<TicketDetalleDto>> ObtenerDetalleAsync(int id)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Consultar ticket por Id y devolver Result<TicketDetalleDto>.Success o Failure según corresponda.
-        throw new NotImplementedException("Implementar en el taller");
+        var ticket = await _ticketRepository.ObtenerPorIdConDetallesAsync(id);
+
+        if (ticket is null)
+        {
+            // ARQUITECTURA: Uso del Patrón Result<T>.
+            // ANTI-PATRÓN EVITADO: Control de flujo mediante excepciones ('throw new KeyNotFoundException').
+            // Las excepciones degradan el rendimiento, alteran la pila de ejecución y ocultan resultados de negocio esperados.
+            return Result<TicketDetalleDto>.Failure($"No se encontró el ticket con ID {id}.");
+        }
+
+        var detalleDto = new TicketDetalleDto
+        {
+            Id = ticket.Id,
+            Titulo = ticket.Titulo,
+            Descripcion = ticket.Descripcion,
+            Prioridad = ticket.Prioridad,
+            Estado = ticket.Estado,
+            CategoriaNombre = ticket.Categoria?.Nombre ?? "Sin Asignar",
+            FechaCreacion = ticket.FechaCreacion,
+            Comentarios = ticket.Comentarios
+                .OrderBy(c => c.Fecha) // Historial cronológico ascendente
+                .Select(c => new ComentarioDto
+                {
+                    Id = c.Id,
+                    Autor = c.Autor,
+                    Mensaje = c.Mensaje,
+                    Fecha = c.Fecha
+                }).ToList()
+        };
+
+        return Result<TicketDetalleDto>.Success(detalleDto);
     }
 
-    public Task<Result<int>> CrearTicketAsync(CrearTicketDto dto)
+    public async Task<Result<int>> CrearTicketAsync(CrearTicketDto dto)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Validar DTO, instanciar entidad Ticket con Estado Inicial 'Abierto' y persistir.
-        throw new NotImplementedException("Implementar en el taller");
+        if (dto.CategoriaId <= 0)
+        {
+            return Result<int>.Failure("Debe seleccionar una categoría válida.");
+        }
+
+        var ticket = new Ticket
+        {
+            Titulo = dto.Titulo.Trim(),
+            Descripcion = dto.Descripcion.Trim(),
+            Prioridad = dto.Prioridad,
+            Estado = EstadoTicket.Abierto,
+            FechaCreacion = DateTime.UtcNow,
+            CategoriaId = dto.CategoriaId
+        };
+
+        await _ticketRepository.AgregarAsync(ticket);
+
+        return Result<int>.Success(ticket.Id);
     }
 
-    public Task<Result> CambiarEstadoAsync(int id, EstadoTicket nuevoEstado)
+    public async Task<Result> CambiarEstadoAsync(int id, EstadoTicket nuevoEstado)
     {
-        // TODO (Bloque 2 - 12:15 PM):
+        var ticket = await _ticketRepository.ObtenerPorIdConDetallesAsync(id);
+
+        if (ticket is null)
+        {
+            return Result.Failure($"No se encontró el ticket con ID {id}.");
+        }
+
         // REGLA DE NEGOCIO OBLIGATORIA 2:
         // No se puede cambiar el estado de un ticket que ya está Resuelto a un estado anterior
-        // (Abierto o EnProceso). Devolver Result.Failure si se incumple la regla.
-        throw new NotImplementedException("Implementar en el taller");
+        // (Abierto o EnProceso). Un ticket resuelto se considera archivado o finalizado.
+        // ARQUITECTURA: Validación de invariantes de negocio dentro del servicio de aplicación.
+        // ANTI-PATRÓN EVITADO: Anemic Domain / Bypass de Reglas en UI (la UI no debe ser la única que controle el flujo).
+        if (ticket.Estado == EstadoTicket.Resuelto &&
+           (nuevoEstado == EstadoTicket.Abierto || nuevoEstado == EstadoTicket.EnProceso))
+        {
+            return Result.Failure("No se puede cambiar el estado de un ticket que ya está Resuelto a un estado anterior (Abierto o En Proceso).");
+        }
+
+        ticket.Estado = nuevoEstado;
+        await _ticketRepository.ActualizarAsync(ticket);
+
+        return Result.Success();
     }
 
-    public Task<Result> AgregarComentarioAsync(AgregarComentarioDto dto)
+    public async Task<Result> AgregarComentarioAsync(AgregarComentarioDto dto)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // REGLA DE NEGOCIO OBLIGATORIA 1:
-        // No se puede agregar un comentario si el ticket tiene Estado == EstadoTicket.Resuelto.
-        // Devolver Result.Failure si se incumple la regla.
-        throw new NotImplementedException("Implementar en el taller");
+        var ticket = await _ticketRepository.ObtenerPorIdConDetallesAsync(dto.TicketId);
+
+        if (ticket is null)
+        {
+            return Result.Failure($"No se encontró el ticket con ID {dto.TicketId}.");
+        }
+
+        if (ticket.Estado == EstadoTicket.Resuelto)
+        {
+            return Result.Failure("No se pueden agregar comentarios a un ticket que ya está Resuelto.");
+        }
+
+        var nuevoComentario = new ComentarioTicket
+        {
+            TicketId = dto.TicketId,
+            Autor = dto.Autor.Trim(),
+            Mensaje = dto.Mensaje.Trim(),
+            Fecha = DateTime.UtcNow
+        };
+
+        await _ticketRepository.AgregarComentarioAsync(nuevoComentario);
+
+        return Result.Success();
     }
 
-    public Task<List<Categoria>> ObtenerCategoriasAsync()
+    public async Task<List<Categoria>> ObtenerCategoriasAsync()
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Consultar categorías desde ICategoriaRepository.
-        throw new NotImplementedException("Implementar en el taller");
+        return await _categoriaRepository.ObtenerTodasAsync();
     }
 }

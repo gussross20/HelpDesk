@@ -1,6 +1,7 @@
 using HelpDesk.Domain.Entities;
 using HelpDesk.Domain.Interfaces;
 using HelpDesk.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpDesk.Infrastructure.Repositories;
 
@@ -13,10 +14,11 @@ public class CategoriaRepository : ICategoriaRepository
         _context = context;
     }
 
-    public Task<List<Categoria>> ObtenerTodasAsync()
+    public async Task<List<Categoria>> ObtenerTodasAsync()
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Implementar consulta de categorías utilizando EF Core (_context.Categorias.AsNoTracking().ToListAsync())
-        throw new NotImplementedException("Implementar en el taller");
+        return await _context.Categorias
+            .AsNoTracking()
+            .OrderBy(c => c.Nombre)
+            .ToListAsync();
     }
 }

@@ -2,6 +2,7 @@ using HelpDesk.Domain.Entities;
 using HelpDesk.Domain.Enums;
 using HelpDesk.Domain.Interfaces;
 using HelpDesk.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace HelpDesk.Infrastructure.Repositories;
 
@@ -14,42 +15,60 @@ public class TicketRepository : ITicketRepository
         _context = context;
     }
 
-    public Task<List<Ticket>> ObtenerTodosAsync(EstadoTicket? estadoFiltro = null)
+    public async Task<List<Ticket>> ObtenerTodosAsync(EstadoTicket? estadoFiltro = null)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Implementar consulta de tickets con:
-        // - AsNoTracking() para alto rendimiento en lecturas
-        // - .Include(t => t.Categoria) y .Include(t => t.Comentarios) para evitar NullReferenceException
-        // - Filtro opcional por estado
-        // - Ordenamiento por FechaCreacion descendente
-        throw new NotImplementedException("Implementar en el taller");
+        // ARQUITECTURA: Eager Loading con .Include(t => t.Categoria) y .Include(t => t.Comentarios)
+        // EF Core traduce esto a operaciones JOIN optimizadas en SQL Server, cargando en memoria
+        // las entidades relacionadas necesarias para mapear los DTOs en una sola consulta.
+        // ANTI-PATRÓN EVITADO: NULL REFERENCE EXCEPTION & N+1 QUERIES
+        // Sin .Include(), las propiedades de navegación 'Categoria' y 'Comentarios' permanecen nulas (null),
+        // provocando NullReferenceException al intentar acceder a 't.Categoria.Nombre' o 't.Comentarios.Count'.
+        // Además, evita el anti-patrón de consultas N+1 donde cada ticket dispara una consulta extra a la BD.
+        var query = _context.Tickets
+            .AsNoTracking()
+            .Include(t => t.Categoria)
+            .Include(t => t.Comentarios)
+            .AsQueryable();
+
+        if (estadoFiltro.HasValue)
+        {
+            query = query.Where(t => t.Estado == estadoFiltro.Value);
+        }
+
+        return await query
+            .OrderByDescending(t => t.FechaCreacion)
+            .ToListAsync();
     }
 
-    public Task<Ticket?> ObtenerPorIdConDetallesAsync(int id)
+    public async Task<Ticket?> ObtenerPorIdConDetallesAsync(int id)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Consultar ticket por Id incluyendo sus relaciones Categoria y Comentarios.
-        throw new NotImplementedException("Implementar en el taller");
+        // ARQUITECTURA: Carga explícita y completa del agregado Ticket con sus relaciones.
+        // ANTI-PATRÓN EVITADO: NullReferenceException al acceder al historial de comentarios o nombre de categoría en vistas de detalle.
+        return await _context.Tickets
+            .Include(t => t.Categoria)
+            .Include(t => t.Comentarios)
+            .FirstOrDefaultAsync(t => t.Id == id);
     }
 
-    public Task AgregarAsync(Ticket ticket)
+    public async Task AgregarAsync(Ticket ticket)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Agregar ticket a la base de datos y llamar SaveChangesAsync().
-        throw new NotImplementedException("Implementar en el taller");
+        await _context.Tickets.AddAsync(ticket);
+        await _context.SaveChangesAsync();
     }
 
-    public Task ActualizarAsync(Ticket ticket)
+    public async Task ActualizarAsync(Ticket ticket)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Actualizar ticket en la base de datos y persistir cambios.
-        throw new NotImplementedException("Implementar en el taller");
+        if (_context.Entry(ticket).State == EntityState.Detached)
+        {
+            _context.Tickets.Update(ticket);
+        }
+
+        await _context.SaveChangesAsync();
     }
 
-    public Task AgregarComentarioAsync(ComentarioTicket comentario)
+    public async Task AgregarComentarioAsync(ComentarioTicket comentario)
     {
-        // TODO (Bloque 2 - 12:15 PM):
-        // Agregar comentario y persistir cambios.
-        throw new NotImplementedException("Implementar en el taller");
+        await _context.Comentarios.AddAsync(comentario);
+        await _context.SaveChangesAsync();
     }
 }
