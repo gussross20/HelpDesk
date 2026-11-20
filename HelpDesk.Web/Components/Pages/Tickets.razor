@@ -1,0 +1,282 @@
+﻿@page "/"
+@page "/tickets"
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+
+<PageTitle>HelpDesk - Tablero de Tickets</PageTitle>
+
+<!-- ARQUITECTURA: AISLAMIENTO DE CAPAS E INVERSIÓN DE CONTROL
+     La vista (capa de presentación) solo inyecta y consume la abstracción ITicketService.
+     No tiene ninguna referencia a HelpDeskDbContext ni a repositorios. Todo el acceso a datos
+     y las transformaciones a DTOs ocurren detrás de esta interfaz de servicio.
+     ANTI-PATRÓN EVITADO: SMART UI / FUGA DE ABSTRACCIÓN
+     Inyectar DbContext directamente en componentes de interfaz (o Code-Behind) acopla la UI
+     a la tecnología de persistencia de datos (SQL Server / EF Core), dispersa las reglas de negocio
+     en eventos de botones de la vista, impide reutilizar casos de uso y hace imposible el testing unitario. -->
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-kanban text-primary me-2"></i>Gestión de Tickets de Soporte
+        </h2>
+        <p class="text-muted mb-0">Sistema de mesa de ayuda con Clean Architecture y Patrones de Diseño.</p>
+    </div>
+    <a href="tickets/nuevo" class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm">
+        <i class="bi bi-plus-circle"></i> Nuevo Ticket
+    </a>
+</div>
+
+@if (_cargando)
+{
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando tickets...</span>
+        </div>
+        <span class="ms-3 text-secondary">Cargando información del sistema...</span>
+    </div>
+}
+else
+{
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-primary text-white">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-white-50 small fw-semibold text-uppercase">Abiertos</span>
+                            <h3 class="fw-bold my-1">@_conteoAbiertos</h3>
+                            <small class="text-white-50">Pendientes de atención</small>
+                        </div>
+                        <div class="p-3 bg-white bg-opacity-25 rounded-circle">
+                            <i class="bi bi-envelope-open fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-warning text-dark">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-dark small fw-bold text-uppercase opacity-75">En Proceso</span>
+                            <h3 class="fw-bold my-1">@_conteoEnProceso</h3>
+                            <small class="opacity-75">En curso de solución</small>
+                        </div>
+                        <div class="p-3 bg-dark bg-opacity-10 rounded-circle">
+                            <i class="bi bi-gear-wide-connected fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-success text-white">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-white-50 small fw-semibold text-uppercase">Resueltos</span>
+                            <h3 class="fw-bold my-1">@_conteoResueltos</h3>
+                            <small class="text-white-50">Finalizados exitosamente</small>
+                        </div>
+                        <div class="p-3 bg-white bg-opacity-25 rounded-circle">
+                            <i class="bi bi-check-circle fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-dark text-white">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-white-50 small fw-semibold text-uppercase">Total Tickets</span>
+                            <h3 class="fw-bold my-1">@_totalGeneral</h3>
+                            <small class="text-white-50">Registrados globalmente</small>
+                        </div>
+                        <div class="p-3 bg-white bg-opacity-25 rounded-circle">
+                            <i class="bi bi-ticket-perforated fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="fw-semibold text-secondary me-2"><i class="bi bi-funnel"></i> Filtrar por Estado:</span>
+                <button type="button"
+                        class="btn btn-sm @(_filtroEstado == null ? "btn-dark shadow-sm" : "btn-outline-secondary")"
+                        @onclick="() => AplicarFiltro(null)">
+                    Todos (@_totalGeneral)
+                </button>
+                <button type="button"
+                        class="btn btn-sm @(_filtroEstado == EstadoTicket.Abierto ? "btn-primary shadow-sm" : "btn-outline-primary")"
+                        @onclick="() => AplicarFiltro(EstadoTicket.Abierto)">
+                    Abiertos (@_conteoAbiertos)
+                </button>
+                <button type="button"
+                        class="btn btn-sm @(_filtroEstado == EstadoTicket.EnProceso ? "btn-warning text-dark shadow-sm" : "btn-outline-warning text-dark")"
+                        @onclick="() => AplicarFiltro(EstadoTicket.EnProceso)">
+                    En Proceso (@_conteoEnProceso)
+                </button>
+                <button type="button"
+                        class="btn btn-sm @(_filtroEstado == EstadoTicket.Resuelto ? "btn-success shadow-sm" : "btn-outline-success")"
+                        @onclick="() => AplicarFiltro(EstadoTicket.Resuelto)">
+                    Resueltos (@_conteoResueltos)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" class="ps-4">ID</th>
+                        <th scope="col">Título</th>
+                        <th scope="col">Categoría</th>
+                        <th scope="col">Prioridad</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col" class="text-center">Comentarios</th>
+                        <th scope="col">Fecha Creación</th>
+                        <th scope="col" class="text-end pe-4">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_ticketsFiltrados.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                No se encontraron tickets con el filtro seleccionado.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var ticket in _ticketsFiltrados)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-semibold text-secondary">#@ticket.Id</td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@ticket.Titulo</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="bi bi-tag me-1"></i>@ticket.CategoriaNombre
+                                    </span>
+                                </td>
+                                <td>
+                                    @switch (ticket.Prioridad)
+                                    {
+                                        case PrioridadTicket.Alta:
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Alta
+                                            </span>
+                                            break;
+                                        case PrioridadTicket.Media:
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-dash-circle me-1"></i>Media
+                                            </span>
+                                            break;
+                                        case PrioridadTicket.Baja:
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-arrow-down-circle me-1"></i>Baja
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @switch (ticket.Estado)
+                                    {
+                                        case EstadoTicket.Abierto:
+                                            <span class="badge bg-primary">Abierto</span>
+                                            break;
+                                        case EstadoTicket.EnProceso:
+                                            <span class="badge bg-warning text-dark">En Proceso</span>
+                                            break;
+                                        case EstadoTicket.Resuelto:
+                                            <span class="badge bg-success">Resuelto</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
+                                        <i class="bi bi-chat-left-text me-1"></i>@ticket.TotalComentarios
+                                    </span>
+                                </td>
+                                <td class="text-muted small">
+                                    @ticket.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="tickets/@ticket.Id" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-eye"></i> Ver Detalle
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _cargando = true;
+    private List<TicketResumenDto> _todosLosTickets = new();
+    private List<TicketResumenDto> _ticketsFiltrados = new();
+    private EstadoTicket? _filtroEstado = null;
+
+    private int _conteoAbiertos => _todosLosTickets.Count(t => t.Estado == EstadoTicket.Abierto);
+    private int _conteoEnProceso => _todosLosTickets.Count(t => t.Estado == EstadoTicket.EnProceso);
+    private int _conteoResueltos => _todosLosTickets.Count(t => t.Estado == EstadoTicket.Resuelto);
+    private int _totalGeneral => _todosLosTickets.Count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatosAsync();
+    }
+
+    private async Task CargarDatosAsync()
+    {
+        _cargando = true;
+        try
+        {
+            // Consultamos todos los tickets para calcular métricas globales
+            _todosLosTickets = await TicketService.ObtenerTicketsAsync();
+            AplicarFiltroEnMemoria();
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private void AplicarFiltro(EstadoTicket? estado)
+    {
+        _filtroEstado = estado;
+        AplicarFiltroEnMemoria();
+    }
+
+    private void AplicarFiltroEnMemoria()
+    {
+        if (_filtroEstado.HasValue)
+        {
+            _ticketsFiltrados = _todosLosTickets.Where(t => t.Estado == _filtroEstado.Value).ToList();
+        }
+        else
+        {
+            _ticketsFiltrados = _todosLosTickets.ToList();
+        }
+    }
+}

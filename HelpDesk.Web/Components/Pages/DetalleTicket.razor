@@ -1,0 +1,398 @@
+@page "/tickets/{Id:int}"
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+
+<PageTitle>HelpDesk - Detalle del Ticket #@Id</PageTitle>
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="" class="text-decoration-none">Tickets</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Ticket #@Id</li>
+    </ol>
+</nav>
+
+@if (_cargando)
+{
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span class="ms-3 text-secondary">Cargando información del ticket...</span>
+    </div>
+}
+else if (_ticket == null)
+{
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+        <div>@(_mensajeError ?? "El ticket solicitado no fue encontrado o no existe.")</div>
+    </div>
+    <a href="" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la lista
+    </a>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_mensajeExito))
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <div>@_mensajeExito</div>
+            <button type="button" class="btn-close" @onclick="() => _mensajeExito = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+            <div>@_mensajeError</div>
+            <button type="button" class="btn-close" @onclick="() => _mensajeError = null"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-5 fw-bold text-secondary">#@_ticket.Id</span>
+                        <h4 class="fw-bold mb-0 text-dark">@_ticket.Titulo</h4>
+                    </div>
+
+                    <div>
+                        @switch (_ticket.Estado)
+                        {
+                            case EstadoTicket.Abierto:
+                                <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-envelope-open me-1"></i>Abierto</span>
+                                break;
+                            case EstadoTicket.EnProceso:
+                                <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-gear-wide me-1"></i>En Proceso</span>
+                                break;
+                            case EstadoTicket.Resuelto:
+                                <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle me-1"></i>Resuelto</span>
+                                break;
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h6 class="text-uppercase text-secondary small fw-bold mb-2">Descripción del Problema</h6>
+                        <div class="p-3 bg-light rounded-3 text-secondary border">
+                            <p class="mb-0" style="white-space: pre-wrap;">@_ticket.Descripcion</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 pt-2 border-top">
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Categoría</small>
+                            <span class="fw-semibold text-dark"><i class="bi bi-tag text-primary me-1"></i>@_ticket.CategoriaNombre</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Prioridad</small>
+                            @switch (_ticket.Prioridad)
+                            {
+                                case PrioridadTicket.Alta:
+                                    <span class="badge bg-danger">Alta</span>
+                                    break;
+                                case PrioridadTicket.Media:
+                                    <span class="badge bg-warning text-dark">Media</span>
+                                    break;
+                                case PrioridadTicket.Baja:
+                                    <span class="badge bg-secondary">Baja</span>
+                                    break;
+                            }
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Fecha de Apertura</small>
+                            <span class="fw-semibold text-dark">@_ticket.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Comentarios</small>
+                            <span class="fw-semibold text-dark">@_ticket.Comentarios.Count respuestas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-chat-left-dots text-primary me-2"></i>Historial de Comentarios
+                    </h5>
+                    <span class="badge bg-secondary-subtle text-secondary border">@_ticket.Comentarios.Count intervenciones</span>
+                </div>
+
+                <div class="card-body p-4">
+                    @if (_ticket.Comentarios.Count == 0)
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-50"></i>
+                            Aún no se han registrado comentarios ni notas de seguimiento para este ticket.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="timeline">
+                            @foreach (var comentario in _ticket.Comentarios)
+                            {
+                                <div class="card border mb-3 shadow-none bg-light bg-opacity-50">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                                     style="width: 32px; height: 32px; font-size: 0.85rem; font-weight: bold;">
+                                                    @(string.IsNullOrEmpty(comentario.Autor) ? "U" : comentario.Autor[0].ToString().ToUpper())
+                                                </div>
+                                                <span class="fw-bold text-dark">@comentario.Autor</span>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock me-1"></i>@comentario.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </div>
+                                        <p class="mb-0 text-secondary" style="white-space: pre-wrap;">@comentario.Mensaje</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="mt-4 pt-3 border-top">
+                        @if (_ticket.Estado == EstadoTicket.Resuelto)
+                        {
+
+                            <div class="alert alert-info d-flex align-items-center gap-2 mb-0" role="alert">
+                                <i class="bi bi-info-circle-fill fs-5"></i>
+                                <div>
+                                    <strong>Ticket Resuelto:</strong> Este caso de soporte ha sido cerrado. Por regla de negocio institucional, no se admiten nuevos comentarios ni notas de seguimiento.
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Agregar un Comentario / Respuesta</h6>
+
+                            <EditForm Model="@_nuevoComentario" OnValidSubmit="EnviarComentarioAsync">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary class="alert alert-warning py-2 mb-3" />
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold" for="autor">Su Nombre o Cargo <span class="text-danger">*</span></label>
+                                    <InputText id="autor" class="form-control" @bind-Value="_nuevoComentario.Autor" placeholder="Ej. Ing. Soporte / Carlos Mendoza" />
+                                    <ValidationMessage For="@(() => _nuevoComentario.Autor)" class="text-danger small" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold" for="mensaje">Mensaje / Nota Técnica <span class="text-danger">*</span></label>
+                                    <InputTextArea id="mensaje"
+                                                   class="form-control"
+                                                   rows="3"
+                                                   @bind-Value="_nuevoComentario.Mensaje"
+                                                   placeholder="Escriba aquí los detalles de la intervención o respuesta al usuario..." />
+                                    <ValidationMessage For="@(() => _nuevoComentario.Mensaje)" class="text-danger small" />
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1" disabled="@_guardandoComentario">
+                                        @if (_guardandoComentario)
+                                        {
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                            <span>Enviando...</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-send"></i>
+                                            <span>Publicar Comentario</span>
+                                        }
+                                    </button>
+                                </div>
+                            </EditForm>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-sliders text-primary me-2"></i>Acciones de Ciclo de Vida
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <p class="small text-muted mb-3">
+                        Transiciones permitidas según el flujo de Clean Architecture:
+                    </p>
+
+                    @if (_ticket.Estado == EstadoTicket.Abierto)
+                    {
+                        <div class="d-grid gap-2">
+                            <button type="button"
+                                    class="btn btn-warning text-dark d-flex align-items-center justify-content-center gap-2"
+                                    @onclick="() => CambiarEstadoAsync(EstadoTicket.EnProceso)"
+                                    disabled="@_cambiandoEstado">
+                                <i class="bi bi-gear-wide-connected"></i> Pasar a "En Proceso"
+                            </button>
+                            <button type="button"
+                                    class="btn btn-success d-flex align-items-center justify-content-center gap-2"
+                                    @onclick="() => CambiarEstadoAsync(EstadoTicket.Resuelto)"
+                                    disabled="@_cambiandoEstado">
+                                <i class="bi bi-check-circle"></i> Marcar como "Resuelto"
+                            </button>
+                        </div>
+                    }
+                    else if (_ticket.Estado == EstadoTicket.EnProceso)
+                    {
+                        <div class="d-grid gap-2">
+                            <button type="button"
+                                    class="btn btn-success d-flex align-items-center justify-content-center gap-2"
+                                    @onclick="() => CambiarEstadoAsync(EstadoTicket.Resuelto)"
+                                    disabled="@_cambiandoEstado">
+                                <i class="bi bi-check-circle"></i> Marcar como "Resuelto"
+                            </button>
+                        </div>
+                    }
+                    else if (_ticket.Estado == EstadoTicket.Resuelto)
+                    {
+
+                        <div class="alert alert-secondary text-center mb-0 py-3" role="alert">
+                            <i class="bi bi-lock-fill fs-3 text-secondary d-block mb-1"></i>
+                            <strong>Ticket Finalizado</strong>
+                            <p class="small text-muted mb-0 mt-1">
+                                Las reglas del dominio impiden revertir un ticket resuelto a estados anteriores.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3 bg-light">
+                <div class="card-body p-3">
+                    <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-info-square-fill text-primary"></i> Guía del Taller
+                    </h6>
+                    <ul class="small text-secondary mb-0 ps-3">
+                        <li class="mb-1"><strong>Clean Architecture:</strong> La UI interactúa con <code>ITicketService</code>, nunca con repositorios o tablas directamente.</li>
+                        <li class="mb-1"><strong>Result Pattern:</strong> Errores de negocio retornan en <code>Result.Error</code> en vez de lanzar excepciones <code>throw</code>.</li>
+                        <li><strong>DIP:</strong> Todas las dependencias son abstraídas mediante interfaces e inyectadas en <code>Program.cs</code>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="" class="btn btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-arrow-left"></i> Volver al Tablero
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TicketDetalleDto? _ticket;
+    private bool _cargando = true;
+    private bool _cambiandoEstado = false;
+    private bool _guardandoComentario = false;
+
+    private string? _mensajeExito;
+    private string? _mensajeError;
+
+    private AgregarComentarioDto _nuevoComentario = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDetalleAsync();
+    }
+
+    private async Task CargarDetalleAsync()
+    {
+        _cargando = true;
+        _mensajeError = null;
+
+        try
+        {
+            var resultado = await TicketService.ObtenerDetalleAsync(Id);
+            if (resultado.IsSuccess)
+            {
+                _ticket = resultado.Value;
+                _nuevoComentario = new AgregarComentarioDto { TicketId = Id };
+            }
+            else
+            {
+                _mensajeError = resultado.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _mensajeError = $"Error al cargar el ticket: {ex.Message}";
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private async Task CambiarEstadoAsync(EstadoTicket nuevoEstado)
+    {
+        _cambiandoEstado = true;
+        _mensajeExito = null;
+        _mensajeError = null;
+
+        try
+        {
+            var resultado = await TicketService.CambiarEstadoAsync(Id, nuevoEstado);
+            if (resultado.IsSuccess)
+            {
+                _mensajeExito = $"El estado del ticket ha sido actualizado a '{nuevoEstado}'.";
+                await CargarDetalleAsync();
+            }
+            else
+            {
+                _mensajeError = resultado.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _mensajeError = $"Error al cambiar de estado: {ex.Message}";
+        }
+        finally
+        {
+            _cambiandoEstado = false;
+        }
+    }
+
+    private async Task EnviarComentarioAsync()
+    {
+        _guardandoComentario = true;
+        _mensajeExito = null;
+        _mensajeError = null;
+
+        try
+        {
+            _nuevoComentario.TicketId = Id;
+            var resultado = await TicketService.AgregarComentarioAsync(_nuevoComentario);
+
+            if (resultado.IsSuccess)
+            {
+                _mensajeExito = "Comentario registrado exitosamente.";
+                _nuevoComentario = new AgregarComentarioDto { TicketId = Id };
+                await CargarDetalleAsync();
+            }
+            else
+            {
+                _mensajeError = resultado.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _mensajeError = $"Error al registrar comentario: {ex.Message}";
+        }
+        finally
+        {
+            _guardandoComentario = false;
+        }
+    }
+}
